@@ -261,4 +261,22 @@ document.addEventListener('submit',function(event){if(event.target?.querySelecto
  const previousRender=window.renderDriverOrders;window.renderDriverOrders=function(){const result=previousRender?.apply(this,arguments);setTimeout(decorateCompletedDeliveries,0);return result};setTimeout(decorateCompletedDeliveries,450)
 })();
 </script>
+<style id="completed-delivery-lock-style">
+.completed-delivery-card>.driver-head{display:none!important}
+.completed-delivery-card .driver-product-row{cursor:default!important}
+.completed-delivery-card .driver-product-row:hover{background:#effaf4!important}
+.completed-delivery-card .driver-product-check:disabled{cursor:default;opacity:1}
+.completed-delivery-card .delivery-products-required{background:#eef7ff;color:#315bea;border-bottom-color:#cadcf6}
+</style>
+<script id="completed-delivery-lock-script">
+(function(){
+ function completedOrder(key){const order=(driverOrders||[]).find(item=>item._key===key);return order&&(order.status==='completed'||order.deliveryStatus==='delivered')}
+ const previousToggleFound=window.toggleDeliveryProductFound;
+ window.toggleDeliveryProductFound=function(orderKey,index,event){event?.stopPropagation();if(completedOrder(orderKey))return;return previousToggleFound?.apply(this,arguments)};
+ function lockCompletedDeliveryCards(){document.querySelectorAll('#driverOrders .driver-order').forEach(card=>{const orderNo=card.dataset.orderNo||card.querySelector('.driver-head b')?.textContent?.replace(/^#/,''),order=(driverOrders||[]).find(item=>String(item.orderId||item._key.slice(-8))===String(orderNo));if(!order||(order.status!=='completed'&&order.deliveryStatus!=='delivered'))return;card.classList.add('completed-delivery-card');const head=card.querySelector('.driver-head');if(head)head.style.display='none';const help=card.querySelector('.delivery-products-required');if(help)help.innerHTML='<i class="fa fa-circle-check"></i> Products confirmed before this delivery was completed.';card.querySelectorAll('.driver-product-row').forEach(row=>{row.removeAttribute('onclick');row.setAttribute('aria-disabled','true');const button=row.querySelector('.driver-product-check');if(button){button.disabled=true;button.innerHTML='<i class="fa fa-check"></i> FOUND'}})})}
+ const previousRenderOrders=window.renderDriverOrders;window.renderDriverOrders=function(){const result=previousRenderOrders?.apply(this,arguments);setTimeout(lockCompletedDeliveryCards,0);return result};
+ const previousToggleProducts=window.toggleDeliveryProducts;window.toggleDeliveryProducts=function(){const result=previousToggleProducts?.apply(this,arguments);setTimeout(lockCompletedDeliveryCards,0);return result};
+ setTimeout(lockCompletedDeliveryCards,500);
+})();
+</script>
 </body></html>
